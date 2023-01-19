@@ -30,6 +30,8 @@
         'es_parser_h265.h',
         'es_parser_h26x.cc',
         'es_parser_h26x.h',
+        'es_parser_teletext.cc',
+        'es_parser_teletext.h',
         'es_parser.h',
         'mp2t_media_parser.cc',
         'mp2t_media_parser.h',
