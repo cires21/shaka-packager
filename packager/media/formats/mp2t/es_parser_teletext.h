@@ -46,6 +46,7 @@ class EsParserTeletext : public EsParser {
   // A map of page_id to language.
   std::unordered_map<uint16_t, std::string> languages_;
   bool sent_info_ = false;
+  uint8_t current_page_number_;
 };
 
 }  // namespace mp2t
