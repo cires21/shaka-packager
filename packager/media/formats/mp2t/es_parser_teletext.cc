@@ -48,14 +48,6 @@ const uint8_t BITREVERSE_8[] = {
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF,
     0x3F, 0xBF, 0x7F, 0xFF};
 
-struct DisplayText {
-  int64_t pts_;
-  int64_t time_offset_ms_;
-  int64_t timeout_s;
-  std::string lang_;
-  std::string text_;
-};
-
 template <typename T>
 constexpr T bit(T value, const size_t bit_pos) {
   return (value >> bit_pos) & 0x1;
@@ -82,8 +74,8 @@ uint8_t ReadHamming(BitReader& reader) {
 bool ParseDataBlock(const int64_t pts,
                     const uint8_t* data_block,
                     const uint16_t packet_nr,
-                    uint8_t& current_page_number,
-                    DisplayText& display_text) {
+                    uint8_t& last_page_number,
+                    std::string& display_text) {
   BitReader reader(data_block, 40);
 
   size_t payload_len = 40;
@@ -94,8 +86,8 @@ bool ParseDataBlock(const int64_t pts,
     const uint8_t page_number_tens = ReadHamming(reader);
     const uint8_t page_number = 10 * page_number_tens + page_number_units;
 
-    current_page_number = page_number;
-    if (current_page_number != PAGE) {
+    last_page_number = page_number;
+    if (last_page_number != PAGE) {
       return false;
     }
 
@@ -110,11 +102,14 @@ bool ParseDataBlock(const int64_t pts,
     /*const uint8_t c5_news_flash = */ bit(subcode_s4_c5_c6, 1);
     /*const uint8_t c6_subtitle = */ bit(subcode_s4_c5_c6, 0);
     /*const uint8_t c7_supress_header = */ bit(subcode_c7_c10, 4);
+
+    return false;
+
   } else if (packet_nr > 25) {
     return false;
   }
 
-  if (current_page_number != PAGE) {
+  if (last_page_number != PAGE) {
     return false;
   }
 
@@ -134,14 +129,7 @@ bool ParseDataBlock(const int64_t pts,
 
   std::string text_utf8(chars.get());
   // text_utf8 = escape_chars(text_utf8);
-
-  if (packet_nr == 0) {
-    return false;
-  }
-
-  uint64_t offset_ms = 0;
-  uint64_t timeout_s = 10;
-  display_text = {pts, offset_ms, timeout_s, LANG, text_utf8};
+  display_text = std::move(text_utf8);
   return true;
 }
 
@@ -200,7 +188,9 @@ EsParserTeletext::EsParserTeletext(uint32_t pid,
     : EsParser(pid),
       new_stream_info_cb_(new_stream_info_cb),
       emit_sample_cb_(emit_sample_cb),
-      current_page_number_(0) {
+      last_magazine_(0),
+      last_page_number_(0),
+      last_pts_(0) {
   if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, languages_)) {
     LOG(ERROR) << "Unable to parse teletext_descriptor";
   }
@@ -236,12 +226,44 @@ void EsParserTeletext::Reset() {}
 bool EsParserTeletext::ParseInternal(const uint8_t* data,
                                      size_t size,
                                      int64_t pts) {
+  if (!last_lines_.empty()) {
+    TextFragmentStyle text_fragment_style;
+    TextSettings text_settings;
+    std::shared_ptr<TextSample> text_sample;
+
+    if (last_lines_.size() == 1) {
+      printf("[%ld - %ld] %s\n", last_pts_, pts, last_lines_[0].c_str());
+      TextFragment text_fragment(text_fragment_style, last_lines_[0].c_str());
+      text_sample = std::make_shared<TextSample>("", last_pts_, pts,
+                                                 text_settings, text_fragment);
+
+    } else {
+      std::vector<TextFragment> sub_fragments;
+      for (const auto& line : last_lines_) {
+        printf("[%ld - %ld] %s\n", last_pts_, pts, line.c_str());
+        sub_fragments.emplace_back(text_fragment_style, line.c_str());
+        sub_fragments.emplace_back(text_fragment_style, true);
+      }
+      sub_fragments.pop_back();
+      TextFragment text_fragment(text_fragment_style, sub_fragments);
+      text_sample = std::make_shared<TextSample>("", last_pts_, pts,
+                                                 text_settings, text_fragment);
+    }
+
+    text_sample->set_sub_stream_index(last_magazine_ * 100 + last_page_number_);
+    emit_sample_cb_.Run(text_sample);
+
+    last_lines_.clear();
+    last_pts_ = pts;
+  }
+
   BitReader reader(data, size);
 
   uint8_t data_identifier;
   RCHECK(reader.ReadBits(8, &data_identifier));
 
-  std::vector<DisplayText> text_pages;
+  std::vector<std::string> lines;
+
   while (reader.bits_available()) {
     uint8_t data_unit_id;
     RCHECK(reader.ReadBits(8, &data_unit_id));
@@ -291,13 +313,17 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
       continue;
     }
 
-    DisplayText text_page;
-    if (ParseDataBlock(pts, data_block, packet_nr, current_page_number_,
-                       text_page)) {
-      printf("[%ld] %s\n", pts, text_page.text_.c_str());
-      text_pages.emplace_back(std::move(text_page));
+    last_magazine_ = magazine;
+
+    std::string display_text;
+    if (ParseDataBlock(pts, data_block, packet_nr, last_page_number_,
+                       display_text)) {
+      lines.emplace_back(std::move(display_text));
     }
   }
+
+  last_lines_.swap(lines);
+  last_pts_ = pts;
 
   return true;
 }

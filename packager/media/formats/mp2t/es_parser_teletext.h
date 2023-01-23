@@ -8,6 +8,7 @@
 #define PACKAGER_MEDIA_FORMATS_MP2T_ES_PARSER_TELETEXT_H_
 
 #include <unordered_map>
+#include <vector>
 
 #include "packager/base/callback.h"
 #include "packager/media/base/byte_queue.h"
@@ -46,7 +47,10 @@ class EsParserTeletext : public EsParser {
   // A map of page_id to language.
   std::unordered_map<uint16_t, std::string> languages_;
   bool sent_info_ = false;
-  uint8_t current_page_number_;
+  uint8_t last_magazine_;
+  uint8_t last_page_number_;
+  std::vector<std::string> last_lines_;
+  int64_t last_pts_;
 };
 
 }  // namespace mp2t
