@@ -6,6 +6,8 @@
 
 #include "packager/media/formats/mp2t/es_parser_teletext.h"
 
+#include <math.h>
+
 #include "packager/media/base/bit_reader.h"
 #include "packager/media/base/text_stream_info.h"
 #include "packager/media/base/timestamp.h"
@@ -19,7 +21,7 @@ namespace {
 
 const uint8_t EBU_TELETEXT_WITH_SUBTITLING = 0x03;
 const uint8_t MAGAZINE = 8;
-const uint8_t PAGE = 77;
+const uint8_t PAGE = 88;
 const std::string LANG = "cat";
 
 const uint8_t BITREVERSE_8[] = {
@@ -59,14 +61,13 @@ constexpr T bit(T value, const size_t bit_pos) {
   return (value >> bit_pos) & 0x1;
 }
 
-template <typename T>
-T hamming_8_4(const T value, const size_t bits) {
-  T result = 0;
+uint8_t hamming_8_4(const uint8_t value) {
+  uint8_t result = 0;
 
-  for (size_t i = 0; i < bits; i += 2) {
-    size_t pos = bits - 2 - i;
-    T b = bit(value, pos);
-    result += 2 ^ (i / 2) * b;
+  for (uint8_t i = 0; i < 8; i += 2) {
+    const uint8_t pos = 6 - i;
+    const uint8_t b = bit(value, pos);
+    result += static_cast<uint8_t>(pow(2, (i / 2))) * b;
   }
 
   return result;
@@ -75,7 +76,7 @@ T hamming_8_4(const T value, const size_t bits) {
 uint8_t ReadHamming(BitReader& reader) {
   uint8_t bits;
   RCHECK(reader.ReadBits(8, &bits));
-  return hamming_8_4(bits, 8);
+  return hamming_8_4(bits);
 }
 
 bool ParseDataBlock(const int64_t pts,
@@ -87,7 +88,6 @@ bool ParseDataBlock(const int64_t pts,
 
   size_t payload_len = 40;
   if (packet_nr == 0) {
-
     payload_len = 32;
     // ETS 300 706 9.3.1 Page header
     const uint8_t page_number_units = ReadHamming(reader);
@@ -99,7 +99,6 @@ bool ParseDataBlock(const int64_t pts,
       return false;
     }
 
-    // LOG(INFO) << "page_number " << page_number;
     /*const uint8_t subcode_s1 = */ ReadHamming(reader);
     const uint8_t subcode_s2_c4 = ReadHamming(reader);
     /*const uint8_t subcode_s3 = */ ReadHamming(reader);
@@ -111,6 +110,8 @@ bool ParseDataBlock(const int64_t pts,
     /*const uint8_t c5_news_flash = */ bit(subcode_s4_c5_c6, 1);
     /*const uint8_t c6_subtitle = */ bit(subcode_s4_c5_c6, 0);
     /*const uint8_t c7_supress_header = */ bit(subcode_c7_c10, 4);
+  } else if (packet_nr > 25) {
+    return false;
   }
 
   if (current_page_number != PAGE) {
@@ -147,31 +148,45 @@ bool ParseDataBlock(const int64_t pts,
 bool ParseSubtitlingDescriptor(
     const uint8_t* descriptor,
     size_t size,
-    std::unordered_map<uint16_t, std::string>* langs) {
+    std::unordered_map<uint16_t, std::string>& result) {
   // See ETSI EN 300 468 Section 6.2.41.
   BitReader reader(descriptor, size);
   size_t data_size;
   RCHECK(reader.SkipBits(8));  // descriptor_tag
   RCHECK(reader.ReadBits(8, &data_size));
   RCHECK(data_size + 2 <= size);
+
   for (size_t i = 0; i < data_size; i += 8) {
     uint32_t lang_code;
-    uint16_t magazine_number;
-    uint16_t page_number;
     RCHECK(reader.ReadBits(24, &lang_code));
-    RCHECK(reader.SkipBits(5));  // teletext_type
+    uint8_t teletext_type;
+    RCHECK(reader.ReadBits(5, &teletext_type));
+    uint16_t magazine_number;
     RCHECK(reader.ReadBits(3, &magazine_number));
-    RCHECK(reader.ReadBits(8, &page_number));
+    if (magazine_number == 0) {
+      magazine_number = 8;
+    }
+
+    uint16_t page_tenths;
+    RCHECK(reader.ReadBits(4, &page_tenths));
+    uint16_t page_digit;
+    RCHECK(reader.ReadBits(4, &page_digit));
+    const uint16_t page_number = page_tenths * 10 + page_digit;
 
     // The lang code is a ISO 639-2 code coded in Latin-1.
     std::string lang(3, '\0');
     lang[0] = (lang_code >> 16) & 0xff;
     lang[1] = (lang_code >> 8) & 0xff;
     lang[2] = (lang_code >> 0) & 0xff;
-    const uint16_t index = (magazine_number << 8 | page_number);
-    LOG(INFO) << "teletext: descriptor lang " << lang << " index " << index;
-    langs->emplace(index, std::move(lang));
+
+    const uint16_t index = magazine_number * 100 + page_number;
+    LOG(INFO) << "teletext: descriptor lang " << lang << " magazine_number "
+              << static_cast<uint32_t>(magazine_number) << " page_number "
+              << static_cast<uint32_t>(page_number) << " teletext_type "
+              << static_cast<uint32_t>(teletext_type);
+    result.emplace(index, std::move(lang));
   }
+
   return true;
 }
 
@@ -186,8 +201,8 @@ EsParserTeletext::EsParserTeletext(uint32_t pid,
       new_stream_info_cb_(new_stream_info_cb),
       emit_sample_cb_(emit_sample_cb),
       current_page_number_(0) {
-  if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, &languages_)) {
-    LOG(WARNING) << "Error parsing subtitling descriptor";
+  if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, languages_)) {
+    LOG(ERROR) << "Unable to parse teletext_descriptor";
   }
 }
 
@@ -199,18 +214,15 @@ bool EsParserTeletext::Parse(const uint8_t* buf,
                              int64_t dts) {
   if (!sent_info_) {
     sent_info_ = true;
-    std::shared_ptr<TextStreamInfo> info = std::make_shared<TextStreamInfo>(
-        pid(), kMpeg2Timescale, kInfiniteDuration, kCodecText,
-        /* codec_string= */ "", /* codec_config= */ "", /* width= */ 0,
-        /* height= */ 0, /* language= */ "");
+    auto info = std::make_shared<TextStreamInfo>(pid(), kMpeg2Timescale,
+                                                 kInfiniteDuration, kCodecText,
+                                                 "", "", 0, 0, "");
     for (const auto& pair : languages_) {
       info->AddSubStream(pair.first, {pair.second});
     }
 
     new_stream_info_cb_.Run(info);
   }
-
-  // LOG(INFO) << "teletext: parse pid" << pid() << " pts " << pts;
 
   return ParseInternal(buf, size, pts);
 }
@@ -231,7 +243,6 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
 
   std::vector<DisplayText> text_pages;
   while (reader.bits_available()) {
-    // LOG(INFO) << "Teletext data unit";
     uint8_t data_unit_id;
     RCHECK(reader.ReadBits(8, &data_unit_id));
 
@@ -245,12 +256,10 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
     }
 
     if (data_unit_id != EBU_TELETEXT_WITH_SUBTITLING) {
-      // LOG(INFO) << "Teletext other data " << data_unit_id;
       RCHECK(reader.SkipBytes(44));
       continue;
     }
 
-    // Table 2: Syntax for Data_field for EBU Teletext
     RCHECK(reader.SkipBits(2));
     uint8_t field_parity;
     RCHECK(reader.ReadBits(1, &field_parity));
@@ -261,10 +270,6 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
     uint8_t framing_code;
     RCHECK(reader.ReadBits(8, &framing_code));
 
-    // magazine and packet address
-    // ETS 300 706
-    // 7.1.2
-    // http://www.etsi.org/deliver/etsi_i_ets/300700_300799/300706/01_60/ets_300706e01p.pdf
     uint16_t address_bits;
     RCHECK(reader.ReadBits(16, &address_bits));
 
@@ -281,10 +286,6 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
          16 * bit(address_bits, 0));
     const uint8_t* data_block = reader.current_byte_ptr();
     RCHECK(reader.SkipBytes(40));
-
-    LOG(INFO) << "data_block " << std::hex
-              << reinterpret_cast<uint64_t>(data_block) << " packet_nr "
-              << packet_nr << " magazine " << magazine;
 
     if (magazine != MAGAZINE) {
       continue;
