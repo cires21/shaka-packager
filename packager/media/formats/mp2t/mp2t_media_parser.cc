@@ -378,7 +378,6 @@ bool Mp2tMediaParser::FinishInitializationIfNeeded() {
   std::vector<std::shared_ptr<StreamInfo>> all_stream_info;
   uint32_t num_es(0);
   for (const auto& pair : pids_) {
-    LOG(INFO) << "FinishInitializationIfNeeded pid " << pair.first << " type " << pair.second->pid_type();
     if ((pair.second->pid_type() == PidState::kPidAudioPes ||
          pair.second->pid_type() == PidState::kPidVideoPes ||
          pair.second->pid_type() == PidState::kPidTextPes) &&

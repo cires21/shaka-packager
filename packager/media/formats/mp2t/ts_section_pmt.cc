@@ -109,14 +109,11 @@ bool TsSectionPmt::ParsePsiSection(BitReader* bit_reader) {
 
       // See ETSI EN 300 468 Section 6.1
       if (stream_type == TsStreamType::kPesPrivateData) {
-        //LOG(INFO) << "kPesPrivateData descriptor_tag: " << std::hex << static_cast<uint32_t>(descriptor_tag);
         switch (descriptor_tag) {
           case 0x56: // teletext_descriptor
-            //LOG(INFO) << "teletext_descriptor";
             pid_info.back().stream_type = TsStreamType::kTeletextSubtitles;
             break;
           case 0x59: // subtitling_descriptor
-            //LOG(INFO) << "subtitling_descriptor";
             pid_info.back().stream_type = TsStreamType::kDvbSubtitles;
             break;
           default:
