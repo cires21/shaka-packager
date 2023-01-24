@@ -20,11 +20,8 @@ namespace mp2t {
 namespace {
 
 const uint8_t EBU_TELETEXT_WITH_SUBTITLING = 0x03;
-const uint8_t MAGAZINE = 8;
-const uint8_t PAGE = 88;
-const std::string LANG = "cat";
 
-const uint8_t BITREVERSE_8[] = {
+const char BITREVERSE_8[] = {
     0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0,
     0x30, 0xB0, 0x70, 0xF0, 0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8,
     0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8, 0x04, 0x84, 0x44, 0xC4,
@@ -48,6 +45,44 @@ const uint8_t BITREVERSE_8[] = {
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF,
     0x3F, 0xBF, 0x7F, 0xFF};
 
+const char CHARSET_G0_LATIN[96][3] = {
+    {0x20, 0x0, 0x0},  {0x21, 0x0, 0x0},  {0x22, 0x0, 0x0},  {0xc2, 0xa3, 0x0},
+    {0x24, 0x0, 0x0},  {0x25, 0x0, 0x0},  {0x26, 0x0, 0x0},  {0x27, 0x0, 0x0},
+    {0x28, 0x0, 0x0},  {0x29, 0x0, 0x0},  {0x2a, 0x0, 0x0},  {0x2b, 0x0, 0x0},
+    {0x2c, 0x0, 0x0},  {0x2d, 0x0, 0x0},  {0x2e, 0x0, 0x0},  {0x2f, 0x0, 0x0},
+    {0x30, 0x0, 0x0},  {0x31, 0x0, 0x0},  {0x32, 0x0, 0x0},  {0x33, 0x0, 0x0},
+    {0x34, 0x0, 0x0},  {0x35, 0x0, 0x0},  {0x36, 0x0, 0x0},  {0x37, 0x0, 0x0},
+    {0x38, 0x0, 0x0},  {0x39, 0x0, 0x0},  {0x3a, 0x0, 0x0},  {0x3b, 0x0, 0x0},
+    {0x3c, 0x0, 0x0},  {0x3d, 0x0, 0x0},  {0x3e, 0x0, 0x0},  {0x3f, 0x0, 0x0},
+    {0x40, 0x0, 0x0},  {0x41, 0x0, 0x0},  {0x42, 0x0, 0x0},  {0x43, 0x0, 0x0},
+    {0x44, 0x0, 0x0},  {0x45, 0x0, 0x0},  {0x46, 0x0, 0x0},  {0x47, 0x0, 0x0},
+    {0x48, 0x0, 0x0},  {0x49, 0x0, 0x0},  {0x4a, 0x0, 0x0},  {0x4b, 0x0, 0x0},
+    {0x4c, 0x0, 0x0},  {0x4d, 0x0, 0x0},  {0x4e, 0x0, 0x0},  {0x4f, 0x0, 0x0},
+    {0x50, 0x0, 0x0},  {0x51, 0x0, 0x0},  {0x52, 0x0, 0x0},  {0x53, 0x0, 0x0},
+    {0x54, 0x0, 0x0},  {0x55, 0x0, 0x0},  {0x56, 0x0, 0x0},  {0x57, 0x0, 0x0},
+    {0x58, 0x0, 0x0},  {0x59, 0x0, 0x0},  {0x5a, 0x0, 0x0},  {0xc2, 0xab, 0x0},
+    {0xc2, 0xbd, 0x0}, {0xc2, 0xbb, 0x0}, {0x5e, 0x0, 0x0},  {0x23, 0x0, 0x0},
+    {0x2d, 0x0, 0x0},  {0x61, 0x0, 0x0},  {0x62, 0x0, 0x0},  {0x63, 0x0, 0x0},
+    {0x64, 0x0, 0x0},  {0x65, 0x0, 0x0},  {0x66, 0x0, 0x0},  {0x67, 0x0, 0x0},
+    {0x68, 0x0, 0x0},  {0x69, 0x0, 0x0},  {0x6a, 0x0, 0x0},  {0x6b, 0x0, 0x0},
+    {0x6c, 0x0, 0x0},  {0x6d, 0x0, 0x0},  {0x6e, 0x0, 0x0},  {0x6f, 0x0, 0x0},
+    {0x70, 0x0, 0x0},  {0x71, 0x0, 0x0},  {0x72, 0x0, 0x0},  {0x73, 0x0, 0x0},
+    {0x74, 0x0, 0x0},  {0x75, 0x0, 0x0},  {0x76, 0x0, 0x0},  {0x77, 0x0, 0x0},
+    {0x78, 0x0, 0x0},  {0x79, 0x0, 0x0},  {0x7a, 0x0, 0x0},  {0xc2, 0xbc, 0x0},
+    {0xc2, 0xa6, 0x0}, {0xc2, 0xbe, 0x0}, {0xc3, 0xb7, 0x0}, {0x7f, 0x0, 0x0}};
+
+const size_t NATIONAL_CHAR_INDEX_G0[13] = {0x03, 0x04, 0x20, 0x3b, 0x3c,
+                                           0x3d, 0x3e, 0x3f, 0x40, 0x5b,
+                                           0x5c, 0x5d, 0x5e};
+
+const char PORTUGUESE_SPANISH[13][3]{
+    {0xc3, 0xa7, 0x0}, {0x24, 0x0, 0x0},  {0xc2, 0xa1, 0x0}, {0xc3, 0xa1, 0x0},
+    {0xc3, 0xa9, 0x0}, {0xc3, 0xad, 0x0}, {0xc3, 0xb3, 0x0}, {0xc3, 0xba, 0x0},
+    {0xc2, 0xbf, 0x0}, {0xc3, 0xbc, 0x0}, {0xc3, 0xb1, 0x0}, {0xc3, 0xa8, 0x0},
+    {0xc3, 0xa0, 0x0}};
+
+const uint8_t CHARSET_PORTUGUESE_SPANISH = 5;
+
 template <typename T>
 constexpr T bit(T value, const size_t bit_pos) {
   return (value >> bit_pos) & 0x1;
@@ -69,68 +104,6 @@ uint8_t ReadHamming(BitReader& reader) {
   uint8_t bits;
   RCHECK(reader.ReadBits(8, &bits));
   return hamming_8_4(bits);
-}
-
-bool ParseDataBlock(const int64_t pts,
-                    const uint8_t* data_block,
-                    const uint16_t packet_nr,
-                    uint8_t& last_page_number,
-                    std::string& display_text) {
-  BitReader reader(data_block, 40);
-
-  size_t payload_len = 40;
-  if (packet_nr == 0) {
-    payload_len = 32;
-    // ETS 300 706 9.3.1 Page header
-    const uint8_t page_number_units = ReadHamming(reader);
-    const uint8_t page_number_tens = ReadHamming(reader);
-    const uint8_t page_number = 10 * page_number_tens + page_number_units;
-
-    last_page_number = page_number;
-    if (last_page_number != PAGE) {
-      return false;
-    }
-
-    /*const uint8_t subcode_s1 = */ ReadHamming(reader);
-    const uint8_t subcode_s2_c4 = ReadHamming(reader);
-    /*const uint8_t subcode_s3 = */ ReadHamming(reader);
-    const uint8_t subcode_s4_c5_c6 = ReadHamming(reader);
-    const uint8_t subcode_c7_c10 = ReadHamming(reader);
-    /*const uint8_t subcode_c11_c14 = */ ReadHamming(reader);
-
-    /*const uint8_t c4_erase_page = */ bit(subcode_s2_c4, 0);
-    /*const uint8_t c5_news_flash = */ bit(subcode_s4_c5_c6, 1);
-    /*const uint8_t c6_subtitle = */ bit(subcode_s4_c5_c6, 0);
-    /*const uint8_t c7_supress_header = */ bit(subcode_c7_c10, 4);
-
-    return false;
-
-  } else if (packet_nr > 25) {
-    return false;
-  }
-
-  if (last_page_number != PAGE) {
-    return false;
-  }
-
-  const uint8_t* payload = reader.current_byte_ptr();
-  RCHECK(reader.SkipBytes(payload_len));
-
-  std::unique_ptr<char[]> chars(new char[payload_len + 1]);
-  memset(chars.get(), 0, payload_len + 1);
-  for (size_t i = 0; i < payload_len; ++i) {
-    char nextChar = BITREVERSE_8[payload[i]] & 0x7f;
-    if (nextChar < 32 || nextChar > 122) {
-      chars[i] = 0x20;
-    } else {
-      chars[i] = nextChar;
-    }
-  }
-
-  std::string text_utf8(chars.get());
-  // text_utf8 = escape_chars(text_utf8);
-  display_text = std::move(text_utf8);
-  return true;
 }
 
 bool ParseSubtitlingDescriptor(
@@ -188,12 +161,13 @@ EsParserTeletext::EsParserTeletext(uint32_t pid,
     : EsParser(pid),
       new_stream_info_cb_(new_stream_info_cb),
       emit_sample_cb_(emit_sample_cb),
-      last_magazine_(0),
-      last_page_number_(0),
-      last_pts_(0) {
+      magazine_(0),
+      page_number_(0),
+      charset_code_(0) {
   if (!ParseSubtitlingDescriptor(descriptor, descriptor_length, languages_)) {
     LOG(ERROR) << "Unable to parse teletext_descriptor";
   }
+  UpdateCharset();
 }
 
 EsParserTeletext::~EsParserTeletext() {}
@@ -226,42 +200,8 @@ void EsParserTeletext::Reset() {}
 bool EsParserTeletext::ParseInternal(const uint8_t* data,
                                      size_t size,
                                      int64_t pts) {
-  if (!last_lines_.empty()) {
-    TextFragmentStyle text_fragment_style;
-    TextSettings text_settings;
-    std::shared_ptr<TextSample> text_sample;
-
-    if (last_lines_.size() == 1) {
-      printf("[%ld - %ld] %s\n", last_pts_, pts, last_lines_[0].c_str());
-      TextFragment text_fragment(text_fragment_style, last_lines_[0].c_str());
-      text_sample = std::make_shared<TextSample>("", last_pts_, pts,
-                                                 text_settings, text_fragment);
-
-    } else {
-      std::vector<TextFragment> sub_fragments;
-      for (const auto& line : last_lines_) {
-        printf("[%ld - %ld] %s\n", last_pts_, pts, line.c_str());
-        sub_fragments.emplace_back(text_fragment_style, line.c_str());
-        sub_fragments.emplace_back(text_fragment_style, true);
-      }
-      sub_fragments.pop_back();
-      TextFragment text_fragment(text_fragment_style, sub_fragments);
-      text_sample = std::make_shared<TextSample>("", last_pts_, pts,
-                                                 text_settings, text_fragment);
-    }
-
-    text_sample->set_sub_stream_index(last_magazine_ * 100 + last_page_number_);
-    emit_sample_cb_.Run(text_sample);
-
-    last_lines_.clear();
-    last_pts_ = pts;
-  }
-
   BitReader reader(data, size);
-
-  uint8_t data_identifier;
-  RCHECK(reader.ReadBits(8, &data_identifier));
-
+  RCHECK(reader.SkipBits(8));
   std::vector<std::string> lines;
 
   while (reader.bits_available()) {
@@ -309,23 +249,153 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
     const uint8_t* data_block = reader.current_byte_ptr();
     RCHECK(reader.SkipBytes(40));
 
-    if (magazine != MAGAZINE) {
-      continue;
-    }
-
-    last_magazine_ = magazine;
-
     std::string display_text;
-    if (ParseDataBlock(pts, data_block, packet_nr, last_page_number_,
-                       display_text)) {
+    if (ParseDataBlock(pts, data_block, packet_nr, magazine, display_text)) {
       lines.emplace_back(std::move(display_text));
     }
   }
 
-  last_lines_.swap(lines);
-  last_pts_ = pts;
+  if (lines.empty()) {
+    return true;
+  }
+
+  const uint16_t index = magazine_ * 100 + page_number_;
+  auto page_state_itr = page_state_.find(index);
+  if (page_state_itr == page_state_.end()) {
+    page_state_.emplace(index, TextBlock{std::move(lines), pts});
+  } else {
+    for (auto& line : lines) {
+      auto& page_state_lines = page_state_itr->second.lines;
+      page_state_lines.emplace_back(std::move(line));
+    }
+    lines.clear();
+  }
 
   return true;
+}
+
+bool EsParserTeletext::ParseDataBlock(const int64_t pts,
+                                      const uint8_t* data_block,
+                                      const uint16_t packet_nr,
+                                      const uint8_t magazine,
+                                      std::string& display_text) {
+  if (packet_nr == 0) {
+    BitReader reader(data_block, 32);
+
+    const uint8_t page_number_units = ReadHamming(reader);
+    const uint8_t page_number_tens = ReadHamming(reader);
+    const uint8_t page_number = 10 * page_number_tens + page_number_units;
+
+    const uint16_t index = magazine * 100 + page_number;
+    SendPending(index, pts);
+
+    page_number_ = page_number;
+    magazine_ = magazine;
+    if (page_number == 0xFF) {
+      return false;
+    }
+
+    RCHECK(reader.SkipBits(40));
+    const uint8_t subcode_c11_c14 = ReadHamming(reader);
+    const uint8_t charset_code = subcode_c11_c14 >> 1;
+    if (charset_code != charset_code_) {
+      charset_code_ = charset_code;
+      UpdateCharset();
+    }
+
+    return false;
+
+  } else if (packet_nr > 25) {
+    return false;
+  }
+
+  const size_t payload_len = 40;
+  std::string next_string;
+  next_string.reserve(payload_len * 2);
+  bool leading_spaces = true;
+
+  for (size_t i = 0; i < payload_len; ++i) {
+    char next_char = BITREVERSE_8[data_block[i]] & 0x7f;
+
+    if (next_char < 32 || next_char > 122) {
+      next_char = 0x20;
+    }
+
+    if (leading_spaces) {
+      if (next_char == 0x20) {
+        continue;
+      }
+      leading_spaces = false;
+    }
+
+    switch (next_char) {
+      case '&':
+        next_string.append("&amp;");
+        break;
+      case '<':
+        next_string.append("&lt;");
+        break;
+      default: {
+        const std::string replacement(current_charset_[next_char - 0x20]);
+        next_string.append(replacement);
+      } break;
+    }
+  }
+
+  display_text = std::move(next_string);
+  return true;
+}
+
+void EsParserTeletext::UpdateCharset() {
+  memcpy(current_charset_, CHARSET_G0_LATIN, 96 * 3);
+  switch (charset_code_) {
+    case CHARSET_PORTUGUESE_SPANISH:
+      for (size_t i = 0; i < 13; ++i) {
+        const size_t position = NATIONAL_CHAR_INDEX_G0[i];
+        memcpy(current_charset_[position], PORTUGUESE_SPANISH[i], 3);
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+void EsParserTeletext::SendPending(const uint16_t index, const int64_t pts) {
+  auto page_state_itr = page_state_.find(index);
+
+  if (page_state_itr != page_state_.end() &&
+      !page_state_itr->second.lines.empty()) {
+    const auto& pending_lines = page_state_itr->second.lines;
+    const auto pending_pts = page_state_itr->second.pts;
+
+    TextFragmentStyle text_fragment_style;
+    TextSettings text_settings;
+    std::shared_ptr<TextSample> text_sample;
+
+    if (pending_lines.size() == 1) {
+      printf("[%ld - %ld] %s\n", pending_pts, pts, pending_lines[0].c_str());
+      TextFragment text_fragment(text_fragment_style, pending_lines[0].c_str());
+      text_sample = std::make_shared<TextSample>("", pending_pts, pts,
+                                                 text_settings, text_fragment);
+
+    } else {
+      std::vector<TextFragment> sub_fragments;
+      for (const auto& line : pending_lines) {
+        printf("[%ld - %ld] %s\n", pending_pts, pts, line.c_str());
+        sub_fragments.emplace_back(text_fragment_style, line.c_str());
+        sub_fragments.emplace_back(text_fragment_style, true);
+      }
+      sub_fragments.pop_back();
+      TextFragment text_fragment(text_fragment_style, sub_fragments);
+      text_sample = std::make_shared<TextSample>("", pending_pts, pts,
+                                                 text_settings, text_fragment);
+    }
+
+    text_sample->set_sub_stream_index(index);
+    emit_sample_cb_.Run(text_sample);
+
+    page_state_.erase(index);
+  }
 }
 
 }  // namespace mp2t

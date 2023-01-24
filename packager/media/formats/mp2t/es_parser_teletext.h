@@ -21,36 +21,44 @@ namespace mp2t {
 class EsParserTeletext : public EsParser {
  public:
   EsParserTeletext(uint32_t pid,
-              const NewStreamInfoCB& new_stream_info_cb,
-              const EmitTextSampleCB& emit_sample_cb,
-              const uint8_t* descriptor,
-              size_t descriptor_length);
+                   const NewStreamInfoCB& new_stream_info_cb,
+                   const EmitTextSampleCB& emit_sample_cb,
+                   const uint8_t* descriptor,
+                   size_t descriptor_length);
   ~EsParserTeletext() override;
 
-  // EsParser implementation.
   bool Parse(const uint8_t* buf, int size, int64_t pts, int64_t dts) override;
   bool Flush() override;
   void Reset() override;
 
  private:
+  struct TextBlock {
+    std::vector<std::string> lines;
+    int64_t pts;
+  };
+
   EsParserTeletext(const EsParserTeletext&) = delete;
   EsParserTeletext& operator=(const EsParserTeletext&) = delete;
 
   bool ParseInternal(const uint8_t* data, size_t size, int64_t pts);
+  bool ParseDataBlock(const int64_t pts,
+                      const uint8_t* data_block,
+                      const uint16_t packet_nr,
+                      const uint8_t magazine,
+                      std::string& display_text);
+  void UpdateCharset();
+  void SendPending(const uint16_t index, const int64_t pts);
 
-  // Callbacks:
-  // - to signal a new audio configuration,
-  // - to send ES buffers.
   NewStreamInfoCB new_stream_info_cb_;
   EmitTextSampleCB emit_sample_cb_;
 
-  // A map of page_id to language.
   std::unordered_map<uint16_t, std::string> languages_;
   bool sent_info_ = false;
-  uint8_t last_magazine_;
-  uint8_t last_page_number_;
-  std::vector<std::string> last_lines_;
-  int64_t last_pts_;
+  uint8_t magazine_;
+  uint8_t page_number_;
+  std::unordered_map<uint16_t, TextBlock> page_state_;
+  uint8_t charset_code_;
+  char current_charset_[96][3];
 };
 
 }  // namespace mp2t
