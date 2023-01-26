@@ -73,6 +73,14 @@ bool ParseSubtitlingDescriptor(
   return true;
 }
 
+std::string RemoveTrailingSpaces(const std::string& input) {
+  auto index = input.find_last_not_of(' ');
+  if (index == std::string::npos) {
+    return "";
+  }
+  return input.substr(0, index + 1);
+}
+
 }  // namespace
 
 EsParserTeletext::EsParserTeletext(const uint32_t pid,
@@ -330,8 +338,7 @@ std::string EsParserTeletext::BuildText(const uint8_t* data_block) const {
     }
   }
 
-  printf("%s\n", next_string.c_str());
-  return next_string;
+  return RemoveTrailingSpaces(next_string);
 }
 
 }  // namespace mp2t
