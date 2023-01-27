@@ -74,7 +74,7 @@ bool ParseSubtitlingDescriptor(
 }
 
 std::string RemoveTrailingSpaces(const std::string& input) {
-  auto index = input.find_last_not_of(' ');
+  const auto index = input.find_last_not_of(' ');
   if (index == std::string::npos) {
     return "";
   }
@@ -105,8 +105,6 @@ bool EsParserTeletext::Parse(const uint8_t* buf,
                              int size,
                              int64_t pts,
                              int64_t dts) {
-  last_pts_ = pts;
-
   if (!sent_info_) {
     sent_info_ = true;
     auto info = std::make_shared<TextStreamInfo>(pid(), kMpeg2Timescale,
@@ -200,7 +198,7 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
   const uint16_t index = magazine_ * 100 + page_number_;
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr == page_state_.end()) {
-    page_state_.emplace(index, TextBlock{std::move(lines), pts});
+    page_state_.emplace(index, TextBlock{std::move(lines), last_pts_});
 
   } else {
     for (auto& line : lines) {
@@ -219,6 +217,7 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
                                       const uint8_t magazine,
                                       std::string& display_text) {
   if (packet_nr == 0) {
+    last_pts_ = pts;
     BitReader reader(data_block, 32);
 
     const uint8_t page_number_units = ReadHamming(reader);
