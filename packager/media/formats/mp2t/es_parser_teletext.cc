@@ -86,6 +86,8 @@ bool ParseSubtitlingDescriptor(
     lang[2] = static_cast<char>((lang_code >> 0) & 0xff);
 
     const uint16_t index = magazine_number * 100 + page_number;
+    LOG(INFO) << "[Teletext] "
+              << "ParseSubtitlingDescriptor " << lang << " " << index;
     result.emplace(index, std::move(lang));
   }
 
@@ -135,15 +137,21 @@ bool EsParserTeletext::Parse(const uint8_t* buf,
     }
 
     new_stream_info_cb_.Run(info);
+    LOG(INFO) << "[Teletext] "
+              << "Parse sent info";
   }
 
   return ParseInternal(buf, size, pts);
 }
 
 bool EsParserTeletext::Flush() {
+  LOG(INFO) << "[Teletext] "
+            << "Flush last_pts_ " << last_pts_;
   std::vector<uint16_t> keys;
   for (const auto& entry : page_state_) {
     keys.push_back(entry.first);
+    LOG(INFO) << "[Teletext] "
+              << "Flush key " << entry.first;
   }
 
   for (const auto key : keys) {
@@ -154,6 +162,8 @@ bool EsParserTeletext::Flush() {
 }
 
 void EsParserTeletext::Reset() {
+  LOG(INFO) << "[Teletext] "
+            << "Reset";
   page_state_.clear();
   magazine_ = 0;
   page_number_ = 0;
@@ -165,11 +175,16 @@ void EsParserTeletext::Reset() {
 bool EsParserTeletext::ParseInternal(const uint8_t* data,
                                      const size_t size,
                                      const int64_t pts) {
+  LOG(INFO) << "[Teletext] "
+            << "ParseInternal pts " << pts << " size " << size;
   BitReader reader(data, size);
   RCHECK(reader.SkipBits(8));
   std::vector<std::string> lines;
 
   while (reader.bits_available()) {
+    LOG(INFO) << "[Teletext] "
+              << "ParseInternal pts " << pts << " reader.bits_available() "
+              << reader.bits_available();
     uint8_t data_unit_id;
     RCHECK(reader.ReadBits(8, &data_unit_id));
 
@@ -182,6 +197,9 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
     }
 
     if (data_unit_id != EBU_TELETEXT_WITH_SUBTITLING) {
+      //      LOG(INFO) << "[Teletext] "
+      //                << "ParseInternal pts " << pts
+      //                << " !EBU_TELETEXT_WITH_SUBTITLING";
       RCHECK(reader.SkipBytes(44));
       continue;
     }
@@ -211,21 +229,45 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
     }
   }
 
+  LOG(INFO) << "[Teletext] "
+            << "ParseInternal pts " << pts << " lines.size() " << lines.size();
+
   if (lines.empty()) {
     return true;
+  }
+
+  for (const auto& line : lines) {
+    LOG(INFO) << "[Teletext] "
+              << "ParseInternal pts " << pts << " line " << line;
   }
 
   const uint16_t index = magazine_ * 100 + page_number_;
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr == page_state_.end()) {
+    LOG(INFO) << "[Teletext] "
+              << "ParseInternal pts " << pts
+              << " page_state_itr == page_state_.end() last_pts_ " << last_pts_;
     page_state_.emplace(index, TextBlock{std::move(lines), {}, last_pts_});
 
   } else {
+    LOG(INFO) << "[Teletext] "
+              << "ParseInternal pts " << pts
+              << " page_state_itr != page_state_.end()";
     for (auto& line : lines) {
       auto& page_state_lines = page_state_itr->second.lines;
       page_state_lines.emplace_back(std::move(line));
     }
     lines.clear();
+  }
+
+  {
+    auto page_state_end_itr = page_state_.find(index);
+    if (page_state_end_itr == page_state_.end()) {
+      for (const auto& line : page_state_end_itr->second.lines) {
+        LOG(INFO) << "[Teletext] "
+                  << "ParseInternal end lines pts " << pts << " line " << line;
+      }
+    }
   }
 
   return true;
@@ -236,6 +278,10 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
                                       const uint8_t packet_nr,
                                       const uint8_t magazine,
                                       std::string& display_text) {
+  LOG(INFO) << "[Teletext] "
+            << "  ParseDataBlock 1 pts " << pts << " packet_nr "
+            << static_cast<uint32_t>(packet_nr) << " magazine "
+            << static_cast<uint32_t>(magazine);
   if (packet_nr == 0) {
     last_pts_ = pts;
     BitReader reader(data_block, 32);
@@ -249,6 +295,13 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
 
     page_number_ = page_number;
     magazine_ = magazine;
+
+    LOG(INFO) << "[Teletext] "
+              << "  ParseDataBlock 2 pts " << pts << " packet_nr "
+              << static_cast<uint32_t>(packet_nr) << " page_number_ "
+              << static_cast<uint32_t>(page_number_) << " magazine "
+              << static_cast<uint32_t>(magazine);
+
     if (page_number == 0xFF) {
       return false;
     }
@@ -272,6 +325,12 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
   }
 
   display_text = BuildText(data_block, packet_nr);
+  LOG(INFO) << "[Teletext] "
+            << "  ParseDataBlock 3 pts " << pts << " packet_nr "
+            << static_cast<uint32_t>(packet_nr) << " page_number_ "
+            << static_cast<uint32_t>(page_number_) << " magazine "
+            << static_cast<uint32_t>(magazine) << " display_text "
+            << display_text;
   return true;
 }
 
@@ -292,13 +351,34 @@ void EsParserTeletext::UpdateCharset() {
 void EsParserTeletext::SendPending(const uint16_t index, const int64_t pts) {
   auto page_state_itr = page_state_.find(index);
 
-  if (page_state_itr == page_state_.end() ||
-      page_state_itr->second.lines.empty()) {
+  if (page_state_itr == page_state_.end()) {
+    LOG(INFO) << "[Teletext] "
+              << "    SendPending pts " << pts << " index "
+              << static_cast<uint32_t>(index)
+              << " page_state_itr == page_state_.end()";
+    return;
+  }
+
+  if (page_state_itr->second.lines.empty()) {
+    LOG(INFO) << "[Teletext] "
+              << "    SendPending pts " << pts << " index "
+              << static_cast<uint32_t>(index)
+              << " page_state_itr->second.lines.empty()";
+    page_state_.erase(index);
     return;
   }
 
   const auto& pending_lines = page_state_itr->second.lines;
   const auto pending_pts = page_state_itr->second.pts;
+
+  LOG(INFO) << "[Teletext] "
+            << "    SendPending pts " << pts << " pending_lines.size() "
+            << pending_lines.size() << " pending_pts " << pending_pts;
+  for (const auto& pending_line : pending_lines) {
+    LOG(INFO) << "[Teletext] "
+              << "    SendPending pts " << pts << " pending_line "
+              << pending_line;
+  }
 
   TextFragmentStyle text_fragment_style;
   TextSettings text_settings;
@@ -322,6 +402,21 @@ void EsParserTeletext::SendPending(const uint16_t index, const int64_t pts) {
   }
 
   text_sample->set_sub_stream_index(index);
+
+  LOG(INFO) << "[Teletext] "
+            << "    SendPending pts " << pts << " text_sample->body().body "
+            << text_sample->body().body
+            << " text_sample->body().sub_fragments.size() "
+            << text_sample->body().sub_fragments.size();
+
+  for (const auto& sub_fragment : text_sample->body().sub_fragments) {
+    LOG(INFO) << "[Teletext] "
+              << "    SendPending pts " << pts
+              << " sub_fragment.sub_fragments.size() "
+              << sub_fragment.sub_fragments.size() << " sub_fragment.body "
+              << sub_fragment.body;
+  }
+
   emit_sample_cb_.Run(text_sample);
 
   page_state_.erase(index);
@@ -391,7 +486,15 @@ void EsParserTeletext::ParsePacket26(const uint8_t* data_block) {
   const uint16_t index = magazine_ * 100 + page_number_;
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr == page_state_.end()) {
+    LOG(INFO) << "[Teletext] "
+              << "    ParsePacket26 "
+              << " page_state_itr == page_state_.end() index " << index
+              << " last_pts_ " << last_pts_;
     page_state_.emplace(index, TextBlock{{}, {}, last_pts_});
+  } else {
+    LOG(INFO) << "[Teletext] "
+              << "    ParsePacket26 "
+              << " page_state_itr != page_state_.end() index " << index;
   }
   auto& replacement_map = page_state_[index].packet_26_replacements;
 
@@ -460,6 +563,11 @@ void EsParserTeletext::ParsePacket26(const uint8_t* data_block) {
                                        CHARSET_G0_LATIN[(data & 0x7f) - 0x20]));
     }
   }
+
+  LOG(INFO) << "[Teletext] "
+            << "    ParsePacket26 "
+            << " replacement_map.size() " << replacement_map.size() << " index "
+            << index;
 }
 
 void EsParserTeletext::SetPacket26ReplacementString(
