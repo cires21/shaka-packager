@@ -38,11 +38,19 @@ class TtmlGenerator {
   bool AddSampleToXml(const TextSample& sample,
                       xml::XmlNode* body,
                       xml::XmlNode* metadata,
+                      std::unordered_set<std::string>& fragmentStyles,
                       size_t* image_count) const;
   bool ConvertFragmentToXml(const TextFragment& fragment,
                             xml::XmlNode* parent,
                             xml::XmlNode* metadata,
+                            std::unordered_set<std::string>& fragmentStyles,
                             size_t* image_count) const;
+
+  bool addStyling(xml::XmlNode& styling,
+                  const std::unordered_set<std::string>& fragmentStyles) const;
+  bool addRegions(xml::XmlNode& layout) const;
+  std::vector<std::string> usedRegions() const;
+  bool isEbuTTTD() const;
 
   std::list<TextSample> samples_;
   std::map<std::string, TextRegion> regions_;
