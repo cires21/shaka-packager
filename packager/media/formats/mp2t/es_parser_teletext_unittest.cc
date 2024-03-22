@@ -331,7 +331,7 @@ TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
   EXPECT_EQ("-Sí.", text_sample_->body().sub_fragments[2].body);
   TextSettings settings = text_sample_->settings();
   EXPECT_EQ(10, settings.line.value().value);
-  EXPECT_EQ(EsParserTeletext::Prefix + "10", settings.region);
+  EXPECT_EQ("ttx_10", settings.region);
   EXPECT_EQ(1, text_samples_.size());
 }
 
@@ -369,15 +369,13 @@ TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
   EXPECT_EQ(1, text_samples_[0]->body().sub_fragments.size());
   EXPECT_EQ(1, text_samples_[1]->body().sub_fragments.size());
   EXPECT_EQ("-Luke !", text_samples_[0]->body().sub_fragments[0].body);
-  EXPECT_EQ(EsParserTeletext::Prefix + "9",
-            text_samples_[0]->settings().region);
+  EXPECT_EQ("ttx_9", text_samples_[0]->settings().region);
   EXPECT_EQ(TextAlignment::kLeft, text_samples_[0]->settings().text_alignment);
   EXPECT_EQ("-Je vais aux cours d'été.",
             text_samples_[1]->body().sub_fragments[0].body);
   EXPECT_EQ(11, text_samples_[1]->settings().line.value().value);
-  EXPECT_EQ(EsParserTeletext::Prefix + "11",
-            text_samples_[1]->settings().region);
-  EXPECT_EQ(TextAlignment::kRight, text_samples_[1]->settings().text_alignment);
+  EXPECT_EQ("ttx_11", text_samples_[1]->settings().region);
+  EXPECT_EQ(TextAlignment::kCenter, text_samples_[1]->settings().text_alignment);
 }
 
 // consecutive_lines_with_slightly_different_pts has the original lines
@@ -412,7 +410,7 @@ TEST_F(EsParserTeletextTest, consecutive_lines_with_slightly_different_pts) {
   EXPECT_EQ(3, text_sample_->body().sub_fragments.size());
   TextSettings settings = text_sample_->settings();
   EXPECT_EQ(10, settings.line.value().value);
-  EXPECT_EQ(EsParserTeletext::Prefix + "10", settings.region);
+  EXPECT_EQ("ttx_10", settings.region);
   EXPECT_EQ(TextAlignment::kCenter, settings.text_alignment);
   EXPECT_EQ("J'ai loupé", text_sample_->body().sub_fragments[0].body);
   EXPECT_EQ("yellow", text_sample_->body().sub_fragments[0].style.color);
