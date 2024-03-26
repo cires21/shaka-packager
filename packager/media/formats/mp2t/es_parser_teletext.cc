@@ -129,7 +129,7 @@ bool EsParserTeletext::Parse(const uint8_t* buf,
       info->AddSubStream(pair.first, {pair.second});
     }
 
-    new_stream_info_cb_(info);
+    new_stream_info_cb_.Run(info);
   }
 
   return ParseInternal(buf, size, pts);
