@@ -248,10 +248,11 @@ class EsParserTeletextTest : public ::testing::Test {
 };
 
 TEST_F(EsParserTeletextTest, descriptor_substreams_has_index_888_language_cat) {
-  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo, this,
-                                 kPesPid, std::placeholders::_1);
-  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample, this,
-                                kPesPid, std::placeholders::_1);
+  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
+                                  base::Unretained(this), kPesPid);
+  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
+                                 base::Unretained(this), kPesPid);
+
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
@@ -271,10 +272,10 @@ TEST_F(EsParserTeletextTest, descriptor_substreams_has_index_888_language_cat) {
 }
 
 TEST_F(EsParserTeletextTest, pes_283413_line_emitted_on_next_pes) {
-  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo, this,
-                                 kPesPid, std::placeholders::_1);
-  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample, this,
-                                kPesPid, std::placeholders::_1);
+  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
+                                  base::Unretained(this), kPesPid);
+  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
+                                 base::Unretained(this), kPesPid);
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
