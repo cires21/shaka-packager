@@ -302,10 +302,10 @@ TEST_F(EsParserTeletextTest, pes_283413_line_emitted_on_next_pes) {
 }
 
 TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
-  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo, this,
-                                 kPesPid, std::placeholders::_1);
-  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample, this,
-                                kPesPid, std::placeholders::_1);
+  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
+                                 base::Unretained(this), kPesPid);
+  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
+                                 base::Unretained(this), kPesPid);
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
@@ -339,10 +339,10 @@ TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
 // 18 and 22, with different alignment, which means that they should
 // result in two parallel text samples.
 TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
-  auto on_new_stream = std::bind(&EsParserTeletextTest::OnNewStreamInfo, this,
-                                 kPesPid, std::placeholders::_1);
-  auto on_emit_text = std::bind(&EsParserTeletextTest::OnEmitTextSample, this,
-                                kPesPid, std::placeholders::_1);
+  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
+                                 base::Unretained(this), kPesPid);
+  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
+                                base::Unretained(this), kPesPid);
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
@@ -382,10 +382,10 @@ TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
 // 20 and 22 with same alignment, which means that they should
 // result in one text sample with two lines.
 TEST_F(EsParserTeletextTest, consecutive_lines_with_slightly_different_pts) {
-  auto on_new_stream = std::bind(&EsParserTeletextTest::OnNewStreamInfo, this,
-                                 kPesPid, std::placeholders::_1);
-  auto on_emit_text = std::bind(&EsParserTeletextTest::OnEmitTextSample, this,
-                                kPesPid, std::placeholders::_1);
+  auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
+                                  base::Unretained(this), kPesPid);
+  auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
+                                 base::Unretained(this), kPesPid);
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
