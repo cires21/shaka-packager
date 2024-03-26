@@ -296,7 +296,6 @@ TEST_F(EsParserTeletextTest, pes_283413_line_emitted_on_next_pes) {
   EXPECT_EQ("white", text_sample_->body().style.color);
   TextSettings settings = text_sample_->settings();
   EXPECT_EQ(TextAlignment::kCenter, settings.text_alignment);
-  EXPECT_TRUE(settings.line.has_value());
   EXPECT_EQ(11, settings.line.value().value);
   EXPECT_EQ(TextUnitType::kLines, settings.line.value().type);
 }
