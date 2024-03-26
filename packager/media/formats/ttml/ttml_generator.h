@@ -10,6 +10,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <unordered_set>
 
 #include "packager/media/base/text_sample.h"
 #include "packager/media/base/text_stream_info.h"
