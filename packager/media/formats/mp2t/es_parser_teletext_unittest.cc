@@ -253,7 +253,6 @@ TEST_F(EsParserTeletextTest, descriptor_substreams_has_index_888_language_cat) {
   auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
                                  base::Unretained(this), kPesPid);
 
-
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
 
@@ -302,7 +301,7 @@ TEST_F(EsParserTeletextTest, pes_283413_line_emitted_on_next_pes) {
 
 TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
   auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
-                                 base::Unretained(this), kPesPid);
+                                  base::Unretained(this), kPesPid);
   auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
                                  base::Unretained(this), kPesPid);
 
@@ -339,9 +338,9 @@ TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
 // result in two parallel text samples.
 TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
   auto on_new_stream = base::Bind(&EsParserTeletextTest::OnNewStreamInfo,
-                                 base::Unretained(this), kPesPid);
+                                  base::Unretained(this), kPesPid);
   auto on_emit_text = base::Bind(&EsParserTeletextTest::OnEmitTextSample,
-                                base::Unretained(this), kPesPid);
+                                 base::Unretained(this), kPesPid);
 
   std::unique_ptr<EsParserTeletext> es_parser_teletext(new EsParserTeletext(
       kPesPid, on_new_stream, on_emit_text, DESCRIPTOR, 12));
@@ -374,7 +373,8 @@ TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
             text_samples_[1]->body().sub_fragments[0].body);
   EXPECT_EQ(11, text_samples_[1]->settings().line.value().value);
   EXPECT_EQ("ttx_11", text_samples_[1]->settings().region);
-  EXPECT_EQ(TextAlignment::kCenter, text_samples_[1]->settings().text_alignment);
+  EXPECT_EQ(TextAlignment::kCenter,
+            text_samples_[1]->settings().text_alignment);
 }
 
 // consecutive_lines_with_slightly_different_pts has the original lines
