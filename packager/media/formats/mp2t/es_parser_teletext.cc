@@ -206,8 +206,8 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
 
     TextRow row;
     if (ParseDataBlock(pts, data_block, packet_nr, magazine, row)) {
-      // LOG(INFO) << "pts=" << pts << " row=" << row.row_number
-      //           << " text=" << row.fragment.body;
+      LOG(INFO) << "pts=" << pts << " row=" << row.row_number
+                << " text=\"" << row.fragment.body << "\"";
       rows.emplace_back(std::move(row));
     }
   }
