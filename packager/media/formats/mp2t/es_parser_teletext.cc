@@ -266,7 +266,8 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
 
     return false;
   } else if (packet_nr == 26) {
-    ParsePacket26(data_block);
+    //ParsePacket26(data_block);
+    LOG(INFO) << "not parsing packet 26";
     return false;
   } else if (packet_nr > 26) {
     return false;
