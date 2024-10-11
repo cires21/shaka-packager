@@ -101,7 +101,7 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
       break;
     }
     case TextSampleRole::kCueWithoutEnd: {
-      LOG(INFO) << "PTS=" << sample_start << " cue start wo end";
+      // LOG(INFO) << "PTS=" << sample_start << " cue start wo end";
       break;
     }
     case TextSampleRole::kCueEnd: {
@@ -116,8 +116,8 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
         auto nS =
             std::make_shared<TextSample>("", cue_start, end_time, s->settings(),
                                          s->body(), TextSampleRole::kCue);
-        LOG(INFO) << "cue shortened. startTime=" << s->start_time()
-                  << " endTime=" << end_time;
+        // LOG(INFO) << "cue shortened. startTime=" << s->start_time()
+        //           << " endTime=" << end_time;
         samples_in_current_segment_.push_back(nS);
       }
       samples_without_end_.clear();

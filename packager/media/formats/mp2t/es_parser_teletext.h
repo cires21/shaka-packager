@@ -65,7 +65,7 @@ class EsParserTeletext : public EsParser {
   TextRow BuildRow(const uint8_t* data_block, const uint8_t row) const;
   void ParsePacket26(const uint8_t* data_block);
   void UpdateNationalSubset(const uint8_t national_subset[13][3]);
-  void SendStartedCue(const uint16_t index);
+  void SendCueStart(const uint16_t index);
   void SendCueEnd(const uint16_t index, const int64_t pts);
 
   static void SetPacket26ReplacementString(
