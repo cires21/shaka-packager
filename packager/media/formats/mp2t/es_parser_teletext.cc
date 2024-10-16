@@ -489,6 +489,7 @@ EsParserTeletext::TextRow EsParserTeletext::BuildRow(const uint8_t* data_block,
   TextFragmentStyle text_style = TextFragmentStyle();
   text_style.color = "white";
   text_style.backgroundColor = "black";
+  bool non_space_found = false;
   // A typical 40 character line looks like:
   // doubleHeight, [color] spaces, Start, Start, text, End, End, spaces
   for (size_t i = 0; i < kPayloadSize; ++i) {
@@ -563,6 +564,12 @@ EsParserTeletext::TextRow EsParserTeletext::BuildRow(const uint8_t* data_block,
     }
     if (start_pos == 0 || end_pos != 0) {  // Not between start and end
       continue;
+    }
+    if (!non_space_found) {
+      if (next_char == 0x20) {
+        continue;
+      }
+      non_space_found = true;
     }
     switch (next_char) {
       case '&':
