@@ -100,7 +100,7 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
       // sample->EndTime();
       break;
     }
-    case TextSampleRole::kCueWithoutEnd: {
+    case TextSampleRole::kCueStart: {
       // LOG(INFO) << "PTS=" << sample_start << " cue start wo end";
       break;
     }
@@ -121,6 +121,10 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
         samples_in_current_segment_.push_back(nS);
       }
       samples_without_end_.clear();
+      break;
+    }
+    case TextSampleRole::kTextHeartBeat: {
+      // LOG(INFO) << "PTS=" << sample_start << " text heartbeat";
       break;
     }
     case TextSampleRole::kMediaHeartBeat: {
@@ -161,7 +165,7 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
   while (sample_start >= segment_start_ + segment_duration_) {
     int64_t segment_end = segment_start_ + segment_duration_;
     for (auto s : samples_without_end_) {
-      if (s->role() == TextSampleRole::kCueWithoutEnd) {
+      if (s->role() == TextSampleRole::kCueStart) {
         if (s->start_time() < segment_end) {
           // Make a new cue in current segment.
           auto cue_start = s->start_time();
@@ -183,7 +187,7 @@ Status TextChunker::OnTextSample(std::shared_ptr<const TextSample> sample) {
       samples_in_current_segment_.push_back(std::move(sample));
       break;
     }
-    case TextSampleRole::kCueWithoutEnd: {
+    case TextSampleRole::kCueStart: {
       samples_without_end_.push_back(std::move(sample));
       break;
     }

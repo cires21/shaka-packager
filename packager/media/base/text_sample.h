@@ -120,12 +120,14 @@ struct TextFragment {
 enum class TextSampleRole {
   /// kCue is complete cue with both start and end time
   kCue,
-  /// kCueWithoutEnd is cue with start time but unknown end time
-  kCueWithoutEnd,
+  /// kCueStart is cue with start time but unknown end time
+  kCueStart,
   /// kCueEnd has time to end a kCueWithoutEnd, if ongooing.
   /// Can be sent multiple times with different times and then acts as heart
   /// beat.
   kCueEnd,
+  // kTextHeartBeat conveys incoming PTS values that do not clear a cue
+  kTextHeartBeat,
   /// kMediaHeartBeat conveys a PTS from another media pid. Use its start_time.
   /// Will typically be shifted up in order to avoid premature segment
   /// generation.

@@ -214,7 +214,7 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
 
   const uint16_t index = magazine_ * 100 + page_number_;
   if (rows.empty()) {
-    SendCueEnd(index, last_pts_);
+    SendTextHeartBeat(index, last_pts_);
     return true;
   }
 
@@ -251,8 +251,6 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
 
     last_pts_ = pts;  // This should ideally be done for each index.
 
-    SendCueEnd(index, pts);
-
     page_number_ = page_number;
     magazine_ = magazine;
 
@@ -270,7 +268,7 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
       charset_code_ = charset_code;
       UpdateCharset();
     }
-
+    page_state_.emplace(index, TextBlock{{}, {}, pts});
     return false;
   } else if (packet_nr == 26) {
     ParsePacket26(data_block);
@@ -332,7 +330,7 @@ void EsParserTeletext::UpdateCharset() {
 
 // SendCueStart emits a text sample with body and ttx_cue_duration_placeholder
 // since the duration is not yet known. More importantly, the role of the
-// sample is set to kCueWithoutEnd.
+// sample is set to kCueStart.
 void EsParserTeletext::SendCueStart(const uint16_t index) {
   auto page_state_itr = page_state_.find(index);
 
@@ -363,7 +361,7 @@ void EsParserTeletext::SendCueStart(const uint16_t index) {
     text_settings.text_alignment = pending_rows[0].alignment;
     text_sample = std::make_shared<TextSample>(
         "", pts_start, pts_end, text_settings, pending_rows[0].fragment,
-        TextSampleRole::kCueWithoutEnd);
+        TextSampleRole::kCueStart);
     text_sample->set_sub_stream_index(index);
     // LOG(INFO) << "send 1 row pts=" << pts_start;
     emit_sample_cb_.Run(text_sample);
@@ -383,7 +381,7 @@ void EsParserTeletext::SendCueStart(const uint16_t index) {
           // Send what has been collected since not adjacent
           text_sample = std::make_shared<TextSample>(
               "", pts_start, pts_end, text_settings,
-              TextFragment({}, sub_fragments), TextSampleRole::kCueWithoutEnd);
+              TextFragment({}, sub_fragments), TextSampleRole::kCueStart);
           text_sample->set_sub_stream_index(index);
           // LOG(INFO) << "send non-adjacent pts=" << pts_start;;
           emit_sample_cb_.Run(text_sample);
@@ -411,7 +409,7 @@ void EsParserTeletext::SendCueStart(const uint16_t index) {
 
   text_sample = std::make_shared<TextSample>(
       "", pts_start, pts_end, text_settings, TextFragment({}, sub_fragments),
-      TextSampleRole::kCueWithoutEnd);
+      TextSampleRole::kCueStart);
   text_sample->set_sub_stream_index(index);
   // LOG(INFO) << "send final cue pts=" << pts_start;
   emit_sample_cb_.Run(text_sample);
@@ -419,7 +417,7 @@ void EsParserTeletext::SendCueStart(const uint16_t index) {
   page_state_itr->second.rows.clear();
 }
 
-// SendCueEnd emits a text sample with role kCueEnd to signal no data/cue end.
+// SendCueEnd emits a text sample with role kCueEnd to signal cue end.
 void EsParserTeletext::SendCueEnd(const uint16_t index, const int64_t pts_end) {
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr != page_state_.end()) {
@@ -444,6 +442,26 @@ void EsParserTeletext::SendCueEnd(const uint16_t index, const int64_t pts_end) {
   last_pts_ = pts_end;
   last_end_pts_ = pts_end;
   inside_sample_ = false;
+}
+
+// SendTextHeartBeat emits a text sample with role kTextHeartBeat
+void EsParserTeletext::SendTextHeartBeat(const uint16_t index, const int64_t pts) {
+    if (last_pts == -1) {
+    last_pts_ = pts;
+    return;
+  }
+  if (pts == last_end_pts_) {
+    return;
+  }
+
+  TextSettings text_settings;
+  auto heartbeat_sample = std::make_shared<TextSample>(
+      "", pts, pts, text_settings, TextFragment({}, ""),
+      TextSampleRole::kTextHeartBeat);
+  heartbeat_sample->set_sub_stream_index(index);
+  // LOG(INFO) << "for index=" << index << " send cue end at pts=" << pts_end;
+  emit_sample_cb_.Run(heartbeat_sample);
+  last_pts_ = pts;
 }
 
 // BuildRow builds a row with alignment information.
@@ -472,7 +490,7 @@ EsParserTeletext::TextRow EsParserTeletext::BuildRow(const uint8_t* data_block,
   text_style.color = "white";
   text_style.backgroundColor = "black";
   // A typical 40 character line looks like:
-  // doubleHeight, [color] spaces, Start, Start, text, End End, spaces
+  // doubleHeight, [color] spaces, Start, Start, text, End, End, spaces
   for (size_t i = 0; i < kPayloadSize; ++i) {
     if (column_replacement_map) {
       const auto column_itr = column_replacement_map->find(i);
