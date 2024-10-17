@@ -122,7 +122,7 @@ enum class TextSampleRole {
   kCue,
   /// kCueStart is cue with start time but unknown end time
   kCueStart,
-  /// kCueEnd has time to end a kCueWithoutEnd, if ongooing.
+  /// kCueEnd has time to end a kCueStart, if ongoing.
   /// Can be sent multiple times with different times and then acts as heart
   /// beat.
   kCueEnd,

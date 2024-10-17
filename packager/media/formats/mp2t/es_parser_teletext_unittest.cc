@@ -289,7 +289,7 @@ TEST_F(EsParserTeletextTest, pes_283413_line_emitted_on_next_pes) {
 
   EXPECT_EQ(3, text_samples_.size());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[0]->role());
-  EXPECT_EQ(TextSampleRole::kCueWithoutEnd, text_samples_[1]->role());
+  EXPECT_EQ(TextSampleRole::kCueStart, text_samples_[1]->role());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[2]->role());
   EXPECT_EQ(283413, text_samples_[1]->start_time());
   EXPECT_EQ(407876, text_samples_[2]->EndTime());
@@ -325,7 +325,7 @@ TEST_F(EsParserTeletextTest, multiple_lines_with_same_pts) {
 
   EXPECT_EQ(3, text_samples_.size());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[0]->role());
-  EXPECT_EQ(TextSampleRole::kCueWithoutEnd, text_samples_[1]->role());
+  EXPECT_EQ(TextSampleRole::kCueStart, text_samples_[1]->role());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[2]->role());
   EXPECT_EQ(8773087, text_samples_[1]->start_time());
   EXPECT_EQ(8937764, text_samples_[2]->EndTime());
@@ -365,8 +365,8 @@ TEST_F(EsParserTeletextTest, separate_lines_with_slightly_different_pts) {
   EXPECT_NE(nullptr, text_sample_.get());
   EXPECT_EQ(4, text_samples_.size());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[0]->role());
-  EXPECT_EQ(TextSampleRole::kCueWithoutEnd, text_samples_[1]->role());
-  EXPECT_EQ(TextSampleRole::kCueWithoutEnd, text_samples_[2]->role());
+  EXPECT_EQ(TextSampleRole::kCueStart, text_samples_[1]->role());
+  EXPECT_EQ(TextSampleRole::kCueStart, text_samples_[2]->role());
   EXPECT_EQ(TextSampleRole::kCueEnd, text_samples_[3]->role());
   // The subtitles should get the same start and end time
   EXPECT_EQ(867681, text_samples_[0]->EndTime());

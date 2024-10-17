@@ -446,7 +446,7 @@ void EsParserTeletext::SendCueEnd(const uint16_t index, const int64_t pts_end) {
 
 // SendTextHeartBeat emits a text sample with role kTextHeartBeat
 void EsParserTeletext::SendTextHeartBeat(const uint16_t index, const int64_t pts) {
-    if (last_pts == -1) {
+    if (last_pts_ == -1) {
     last_pts_ = pts;
     return;
   }
