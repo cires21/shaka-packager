@@ -206,8 +206,8 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
 
     TextRow row;
     if (ParseDataBlock(pts, data_block, packet_nr, magazine, row)) {
-      LOG(INFO) << "pts=" << pts << " row=" << row.row_number << " text=\""
-                << row.fragment.body << "\"";
+      // LOG(INFO) << "pts=" << pts << " row=" << row.row_number << " text=\""
+      //          << row.fragment.body << "\"";
       rows.emplace_back(std::move(row));
     }
   }
@@ -220,7 +220,7 @@ bool EsParserTeletext::ParseInternal(const uint8_t* data,
 
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr == page_state_.end()) {
-    LOG(INFO) << "index=" << index << " create TextBlock pts=" << pts;
+    // LOG(INFO) << "index=" << index << " create TextBlock pts=" << pts;
     page_state_.emplace(index, TextBlock{std::move(rows), {}, last_pts_});
   } else {
     for (auto& row : rows) {
@@ -264,20 +264,20 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
     const uint8_t subcode_c11_c14 = ReadHamming(reader);
     const uint8_t subcode_c11_serial = subcode_c11_c14 & 1;
     const uint8_t charset_code = subcode_c11_c14 >> 1;
-    LOG(INFO) << "index=" << index << " pts=" << pts << " erase page "
-              << int(erase_code_s4) << " charset=" << int(charset_code)
-              << " serial=" << int(subcode_c11_serial);
+    // LOG(INFO) << "index=" << index << " pts=" << pts << " erase page "
+    //          << int(erase_code_s4) << " charset=" << int(charset_code)
+    //          << " serial=" << int(subcode_c11_serial);
     if (charset_code != charset_code_) {
-      LOG(INFO) << "pts=" << pts << " new charset_code " << int(charset_code);
+      // LOG(INFO) << "pts=" << pts << " new charset_code " << int(charset_code);
       charset_code_ = charset_code;
       UpdateCharset();
     }
     page_state_.emplace(index, TextBlock{{}, {}, last_pts_});
-    LOG(INFO) << "index=" << index
-              << " create TextBlock triggered by packet 0 pts=" << pts;
+    // LOG(INFO) << "index=" << index
+    //          << " create TextBlock triggered by packet 0 pts=" << pts;
     return false;
   } else if (packet_nr == 26) {
-    LOG(INFO) << "pts=" << pts << " packet26";
+    // LOG(INFO) << "pts=" << pts << " packet26";
     ParsePacket26(data_block);
     return false;
   } else if (packet_nr > 26) {
@@ -301,7 +301,7 @@ bool EsParserTeletext::ParseDataBlock(const int64_t pts,
 
 void EsParserTeletext::UpdateCharset() {
   memcpy(current_charset_, TELETEXT_CHARSET_G0_LATIN, sizeof(TELETEXT_CHARSET_G0_LATIN));
-  LOG(INFO) << "update charset: " << int(charset_code_);
+  // LOG(INFO) << "update charset: " << int(charset_code_);
   if (charset_code_ > 7) {
     return;
   }
@@ -431,7 +431,7 @@ void EsParserTeletext::SendCueStart(const uint16_t index) {
 void EsParserTeletext::SendCueEnd(const uint16_t index, const int64_t pts_end) {
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr != page_state_.end()) {
-    LOG(INFO) << "index=" << index << " erasing state at pts=" << pts_end;
+    // LOG(INFO) << "index=" << index << " erasing state at pts=" << pts_end;
     page_state_.erase(index);
   }
 
@@ -443,7 +443,7 @@ void EsParserTeletext::SendCueEnd(const uint16_t index, const int64_t pts_end) {
     return;
   }
 
-  LOG(INFO) << "index=" << index << " sending cueEnd pts=" << pts_end;
+  // LOG(INFO) << "index=" << index << " sending cueEnd pts=" << pts_end;
   TextSettings text_settings;
   auto end_sample = std::make_shared<TextSample>(
       "", pts_end, pts_end, text_settings, TextFragment({}, ""),
