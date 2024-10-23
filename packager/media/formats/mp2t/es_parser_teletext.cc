@@ -509,8 +509,8 @@ EsParserTeletext::TextRow EsParserTeletext::BuildRow(const uint8_t* data_block,
     if (column_replacement_map) {
       const auto column_itr = column_replacement_map->find(i);
       if (column_itr != column_replacement_map->cend()) {
-        LOG(INFO) << "packet26 replacing col " << int(i) << " with "
-                  << column_itr->second;
+        // LOG(INFO) << "packet26 replacing col " << int(i) << " with "
+        //         << column_itr->second;
         next_string.append(column_itr->second);
         continue;
       }
@@ -615,8 +615,8 @@ void EsParserTeletext::ParsePacket26(const uint8_t* data_block) {
   const uint16_t index = magazine_ * 100 + page_number_;
   auto page_state_itr = page_state_.find(index);
   if (page_state_itr == page_state_.end()) {
-    LOG(INFO) << "index=" << index
-              << " create TextBlock triggered by packet 26 pts=" << last_pts_;
+    // LOG(INFO) << "index=" << index
+    //          << " create TextBlock triggered by packet 26 pts=" << last_pts_;
     page_state_.emplace(index, TextBlock{{}, {}, last_pts_});
   }
   auto& replacement_map = page_state_[index].packet_26_replacements;
